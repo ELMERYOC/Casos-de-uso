@@ -1,0 +1,14 @@
+package progra2.SistemaMedico.excepciones;
+
+import org.attoparser.IMarkupParser;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.http.HttpStatus;
+
+@ResponseStatus(HttpStatus.BAD_REQUEST)
+public class ReglasDeNegocioException extends RuntimeException {
+    public ReglasDeNegocioException(String message){
+        super(message);
+    }
+
+
+}
