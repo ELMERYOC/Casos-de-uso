@@ -27,86 +27,76 @@ import progra2.SistemaMedico.security.JwtAuthenticationFilter;
 import java.util.Arrays;
 import java.util.List;
 
-/*indica que  la clase es de configuracion indica que los metodos estaran marcados
-con anotation @Bean los cuales se utilizaran para crear y configurar los objetos requeridos en la aplicacion*/
-@Configuration
-@EnableWebSecurity
-@EnableMethodSecurity
-@RequiredArgsConstructor
-public class SecurityConfig {
+        /*indica que  la clase es de configuracion indica que los metodos estaran marcados
+        con anotation @Bean los cuales se utilizaran para crear y configurar los objetos requeridos en la aplicacion*/
+        @Configuration
+        @EnableWebSecurity
+        @EnableMethodSecurity
+        @RequiredArgsConstructor
+        public class SecurityConfig {
 
-    private final JwtAuthenticationFilter jwtAuthenticationFilter;
-    private final UserDetailsService userDetailsService;
-    private final PasswordEncoder passwordEncoder;
+            private final JwtAuthenticationFilter jwtAuthenticationFilter;
+            private final UserDetailsService userDetailsService;
+            private final PasswordEncoder passwordEncoder;
 
-    @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http
-                .csrf(csrf -> csrf.disable())
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .authorizeHttpRequests(auth -> auth
-                        // Rutas públicas
-                        .requestMatchers("/", "/login", "/registro", "/css/**", "/js/**").permitAll()
-                        // APIs públicas
-                        .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("/api/usuarios/registrar").permitAll()
-                        // APIs protegidas
-                        .requestMatchers("/api/admin/**").hasRole("ADMINISTRADOR")
-                        // Vistas protegidas
-                        .requestMatchers("/admin/**").hasRole("ADMINISTRADOR")
-                        .requestMatchers("/paciente/**", "/citas/**").hasAnyRole("PACIENTE", "ADMINISTRADOR")
-                        .requestMatchers("/dashboard").authenticated()
-                        // Todo lo demás requiere autenticación
-                        .anyRequest().authenticated()
-                )
-                .formLogin(form -> form
-                        .loginPage("/login")
-                        .loginProcessingUrl("/login-web")
-                        .defaultSuccessUrl("/dashboard", true)
-                        .failureUrl("/login?error=true")
-                        .permitAll()
-                )
-                .logout(logout -> logout
-                        .logoutUrl("/logout")
-                        .logoutSuccessUrl("/login?logout=true")
-                        .invalidateHttpSession(true)
-                        .deleteCookies("JSESSIONID")
-                        .permitAll()
-                )
-                .sessionManagement(session -> session
-                        .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
-                        .maximumSessions(1)
-                        .maxSessionsPreventsLogin(false)
-                )
-                .authenticationProvider(authenticationProvider())
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+            @Bean
+            public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+                http
+                        .csrf(csrf -> csrf.disable())
+                        .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                        .authorizeHttpRequests(auth -> auth
+                                // AGREGA "/procesar-login" a las rutas públicas
+                                .requestMatchers("/", "/login", "/registro", "/verificar-dpi", "/procesar-registro", "/procesar-login", "/css/**", "/js/**").permitAll()
+                                .requestMatchers("/api/auth/**").permitAll()
+                                .requestMatchers("/api/usuarios/registrar").permitAll()
+                                .requestMatchers("/api/admin/**").hasRole("ADMINISTRADOR")
+                                .requestMatchers("/admin/**").hasAnyRole("ADMINISTRADOR")
+                                .requestMatchers("/paciente/**", "/citas/**").hasAnyRole("PACIENTE", "ADMINISTRADOR")
+                                .requestMatchers("/dashboard").authenticated()
+                                .anyRequest().authenticated()
+                        )
+                        .formLogin(form -> form
+                                .loginPage("/login")
+                                // CAMBIA ESTO: Pon una URL que tu formulario HTML NO use, para que Spring NO lo intercepte
+                                .loginProcessingUrl("/autenticar-spring")
+                                .successHandler((request, response, authentication) -> {
+                                    if (authentication.getAuthorities().stream()
+                                            .anyMatch(a -> a.getAuthority().equals("ROLE_ADMINISTRADOR"))) {
+                                        response.sendRedirect("/admin/dashboard");
+                                    } else {
+                                        response.sendRedirect("/paciente/dashboard");
+                                    }
+                                })
+                                .failureUrl("/login?error=true")
+                                .permitAll()
+                        );
 
-        return http.build();
-    }
+                return http.build();
+            }
 
-    @Bean
-    public AuthenticationProvider authenticationProvider() {
-        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
-        authProvider.setUserDetailsService(userDetailsService);
-        authProvider.setPasswordEncoder(passwordEncoder);
-        return authProvider;
-    }
+            @Bean
+            public AuthenticationProvider authenticationProvider() {
+                DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
+                authProvider.setUserDetailsService(userDetailsService);
+                authProvider.setPasswordEncoder(passwordEncoder);
+                return authProvider;
+            }
 
-    @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
-        return config.getAuthenticationManager();
-    }
+            @Bean
+            public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
+                return config.getAuthenticationManager();
+            }
 
-    @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("*"));
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(Arrays.asList("*"));
+            @Bean
+            public CorsConfigurationSource corsConfigurationSource() {
+                CorsConfiguration configuration = new CorsConfiguration();
+                configuration.setAllowedOrigins(List.of("*"));
+                configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+                configuration.setAllowedHeaders(Arrays.asList("*"));
 
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration);
-        return source;
-    }
+                UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+                source.registerCorsConfiguration("/**", configuration);
+                return source;
+            }
 
-}
+        }

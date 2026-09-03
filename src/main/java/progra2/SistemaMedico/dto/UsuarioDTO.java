@@ -47,6 +47,9 @@ public class UsuarioDTO {
     @Pattern(regexp = "^\\d{8,20}$", message = "El teléfono debe contener entre 8 y 20 dígitos")
     private String telefono;
 
+    @Size(max = 50, message = "El número de seguro no puede exceder 50 caracteres")
+    private String numeroSeguro;
+
     private Boolean esActivo;
 
     private Boolean esAdministrador;

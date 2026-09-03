@@ -115,6 +115,13 @@ public class AutenticacionServicio implements IAutenticacionServicio {
         }
     }
 
+    /**
+     * Método para obtener usuario por username (usado en login web)
+     */
+    public Usuario obtenerPorUsername(String username) {
+        return repo.findByUsername(username).orElse(null);
+    }
+
 
     @Override
     @Transactional
@@ -132,7 +139,7 @@ public class AutenticacionServicio implements IAutenticacionServicio {
         usuario.setPassword(encoder.encode(dto.getPassword()));
         usuario.setActivo(true);
 
-        if (usuario.getRol() != null) {
+        if (usuario.getRol() == null) {
             usuario.setRol(UserRol.PACIENTE);
         }
 
@@ -173,3 +180,4 @@ public class AutenticacionServicio implements IAutenticacionServicio {
     }
 
 }
+
